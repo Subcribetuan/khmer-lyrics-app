@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth, useTheme } from '../App';
 import { Eye, EyeOff, Music, Sun, Moon } from 'lucide-react';
@@ -7,10 +7,22 @@ function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    const savedCredentials = localStorage.getItem('khmer-lyrics-saved-login');
+    if (savedCredentials) {
+      const { username: savedUser, password: savedPass } = JSON.parse(savedCredentials);
+      setUsername(savedUser);
+      setPassword(savedPass);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +33,14 @@ function LoginPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const success = login(username, password);
-    if (!success) {
+    if (success) {
+      // Save or clear credentials based on rememberMe
+      if (rememberMe) {
+        localStorage.setItem('khmer-lyrics-saved-login', JSON.stringify({ username, password }));
+      } else {
+        localStorage.removeItem('khmer-lyrics-saved-login');
+      }
+    } else {
       setError('Invalid username or password');
     }
     setIsLoading(false);
@@ -146,15 +165,45 @@ function LoginPage() {
             </div>
           </div>
 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginTop: 'var(--space-sm)'
+          }}>
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{
+                width: '18px',
+                height: '18px',
+                cursor: 'pointer',
+                accentColor: 'var(--gold-primary)'
+              }}
+            />
+            <label
+              htmlFor="rememberMe"
+              style={{
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                fontSize: '0.9rem'
+              }}
+            >
+              Remember me
+            </label>
+          </div>
+
           <motion.button
             type="submit"
             className="btn btn-primary"
             disabled={isLoading}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            style={{ 
-              width: '100%', 
-              marginTop: 'var(--space-sm)',
+            style={{
+              width: '100%',
+              marginTop: 'var(--space-md)',
               height: '52px',
               fontSize: '1.1rem'
             }}
